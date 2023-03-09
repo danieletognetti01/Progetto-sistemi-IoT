@@ -54,7 +54,7 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 #define LED 13
 
 //Set Mac address of receiver
-String MAC_ADDRESS = "98:76:B6:11:9b:2a";
+String MAC_ADDRESS = "xx:xx:xx:xx:xx:xx";
 
 void setup()
 {
