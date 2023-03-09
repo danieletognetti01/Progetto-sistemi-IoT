@@ -1,14 +1,13 @@
-
 #include <SPI.h>
 #include <PubSubClient.h>
 #include <WiFi.h>
 
 //Set Wi-Fi SSID and password
-const char* ssid     = "La Scintilla Gt 2.4Gh"; ////////Ricorda la z finale
-const char* password = "Tognettigf_1305";
+const char* ssid     = "XXX"
+const char* password = "XXX";
 
 //IP of broker server
-IPAddress server(192, 168, 227, 146);
+IPAddress server(XX, XX, XX, XX);
 
 WiFiClient WifiClient;
 PubSubClient client(WifiClient);
