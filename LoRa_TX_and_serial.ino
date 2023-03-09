@@ -2,7 +2,7 @@
 #include <RH_RF95.h>
 
 //Define mac address of sender
-#define MAC_ADDRESS "xx:xx:xx:xx:xx"
+#define MAC_ADDRESS "xx:xx:xx:xx:xx:xx"
 
 //Set pin for the LoRa module
 #define RFM95_CS 8
