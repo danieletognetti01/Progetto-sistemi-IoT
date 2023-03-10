@@ -1,11 +1,10 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-// REPLACE WITH YOUR RECEIVER MAC Address
-uint8_t broadcastAddress[] = {0xC8, 0xF0, 0x9E, 0x7B, 0x15, 0xAC};
+// receiver mac address
+uint8_t broadcastAddress[] = {0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xXX};
 
-// Structure example to send data
-// Must match the receiver structure
+// Structure of the data to send
 typedef struct struct_message {
   int num[62];
 } struct_message;
@@ -14,7 +13,7 @@ typedef struct struct_message {
 struct_message myData;
 
 esp_now_peer_info_t peerInfo;
-// callback function that will be executed when data is received
+
 
 unsigned long start;
 unsigned long finish;
@@ -23,6 +22,8 @@ float tempo_medio = 0;
 int num_pack =0 ;
 float throughput = 0;
 bool isfirst;
+
+// callback function that will be executed when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   finish = millis();
   Serial.print("Tempo impiegato: ");
@@ -48,7 +49,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? NULL : pack_lost++ );
-  //ESP_NOW_SEND_SUCCESS ? NULL : pack_lost++;
 }
  
 void setup() {
@@ -72,6 +72,7 @@ void setup() {
   
   // Register peer
   memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  //Set current channel of the Wi-Fi
   peerInfo.channel = 0;  
   peerInfo.encrypt = false;
   
@@ -84,10 +85,11 @@ void setup() {
 }
  
 void loop() {
+  //Wait a send command from serial interface
   if(Serial2.available()){
      String command = Serial2.readStringUntil('\n');
-     //Serial2.end();
      isfirst = true;
+     //extract data from command received
      int index = command.indexOf(' ');
      num_pack = command.substring(0, index+1).toInt();
      String mac = command.substring(index+1);
@@ -96,69 +98,65 @@ void loop() {
     mac.toCharArray(str, 18);
   uint8_t MAC[6];
   char* ptr;
-
   MAC[0] = strtol( strtok(str,":"), &ptr, HEX );
   for( uint8_t i = 1; i < 6; i++ )
   {
     MAC[i] = strtol( strtok( NULL,":"), &ptr, HEX );
   }
-
-
-
   Serial.print(MAC[0], HEX);
   for( uint8_t i = 1; i < 6; i++)
   {
     Serial.print(':');
     Serial.print( MAC[i], HEX);
   }
+  //If Mac address is not in the peer list, add new peer to list
   if(!esp_now_is_peer_exist(MAC)){
-     memcpy(peerInfo.peer_addr, MAC, 6);
-  peerInfo.channel = 0;  
-  peerInfo.encrypt = false;
-  
-  // Add peer        
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
+    memcpy(peerInfo.peer_addr, MAC, 6);
+    peerInfo.channel = 0;  
+    peerInfo.encrypt = false;    
+    if (esp_now_add_peer(&peerInfo) != ESP_OK){
+      Serial.println("Failed to add peer");
+      return;
+    }
   }
   Serial.println();
   
-     Serial.println(num_pack);
-     Serial.println(mac);
-      for(int i=0;i<num_pack;i++){
-         myData.num[0] = i;
-        // Send message via ESP-NOW
-        //esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
-        esp_err_t result = esp_now_send(MAC, (uint8_t *) &myData, sizeof(myData));
-        start = millis();
-        if (result == ESP_OK) {
-          Serial.println("Sent with success");
-        }
-        else {
-          pack_lost++;
-          Serial.println("Error sending the data");
-        }
-           delay(2000);
-      }
-      Serial.print("Pacchetti persi:");
-      Serial.println(pack_lost);
-      Serial.print("Tempo medio:");
-      Serial.println(tempo_medio);
-      String mando = "";
-      String count_s = String(num_pack - pack_lost);
-      String separator = "#";
-      String time_s = String(tempo_medio);
-      String separator_2 = "_";
-      String throughput_s = String(throughput);
-      mando = count_s + separator + time_s + separator_2 + throughput_s;
-      Serial.println(mando);
-      //Serial2.begin(115200);
-      Serial2.println(mando); 
-      pack_lost = 0;
-      tempo_medio = 0;
-      throughput = 0;
-      Serial.println("--------------------------");
+  Serial.println(num_pack);
+  Serial.println(mac);
+  for(int i=0;i<num_pack;i++){
+    //put some data inside the packet
+     myData.num[0] = i;
+    // Send message via ESP-NOW
+    esp_err_t result = esp_now_send(MAC, (uint8_t *) &myData, sizeof(myData));
+    start = millis();
+    if (result == ESP_OK) {
+      Serial.println("Sent with success");
+    }
+    else {
+      pack_lost++;
+      Serial.println("Error sending the data");
+    }
+       delay(2000);
+  }
+  Serial.print("Pacchetti persi:");
+  Serial.println(pack_lost);
+  Serial.print("Tempo medio:");
+  Serial.println(tempo_medio);
+  String mando = "";
+  String count_s = String(num_pack - pack_lost);
+  String separator = "#";
+  String time_s = String(tempo_medio);
+  String separator_2 = "_";
+  String throughput_s = String(throughput);
+  mando = count_s + separator + time_s + separator_2 + throughput_s;
+  Serial.println(mando);
+  //Send data to serial interface
+  Serial2.println(mando); 
+  //reset the values
+  pack_lost = 0;
+  tempo_medio = 0;
+  throughput = 0;
+  Serial.println("--------------------------");
     
   }
 
