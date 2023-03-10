@@ -3,10 +3,13 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
 
-const char* ssid     = "La Scintilla Gt 2.4Ghz";
-const char* password = "Tognettigf_1305";
+//Set SSID and password of the Wi-Fi
+const char* ssid     = "XXXX";
+const char* password = "XXXX";
 
-IPAddress server(192, 168, 86, 103);
+//IP address of MQTT server
+IPAddress server(XX, XX, XX, XX);
+
 WiFiClient WifiClient;
 PubSubClient client(WifiClient);
 
@@ -17,6 +20,7 @@ bool modify = false;
 bool isfirst = true;
 String throughput ="";
 
+//Callback called when a message from broker arrive
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
@@ -24,6 +28,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   num_pack_tot="";
   for (int i=0;i<length;i++) {
     num_pack_tot += ((char)payload[i]);
+    //Send command to serial interface
     Serial2.print((char)payload[i]);
   }
   Serial2.println();
@@ -32,7 +37,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   int conta = 0;
   String datae;
   while(conta<2){
+    //Wait information from serial interafce
     if(Serial2.available()){
+       //Not consider the first message coming from serial interface if is the first time
        if(isfirst){
         isfirst = false;
       }
@@ -44,8 +51,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
       conta++;
     }
   }
-  Serial.println("serial 2 disponibile");
   Serial.println(datae);
+  //Split the information received and set flag modify to true
   int index = datae.indexOf('#');
   int index_2 = datae.indexOf('_');
   num_pack_recv = datae.substring(0,index);
@@ -60,7 +67,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
 }
 
-
+//Reconnect to MQTT broker fuction
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
@@ -72,7 +79,6 @@ void reconnect() {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
       delay(5000);
     }
   }
@@ -83,9 +89,11 @@ void setup()
   Serial.begin(115200);
   Serial2.begin(115200);
 
+  //Set MQTT server ip and port
   client.setServer(server, 1883);
   client.setCallback(callback);
 
+  //Connect to WI-Fi
   WiFi.begin(ssid, password);
   Serial.println(WiFi.macAddress());
 
@@ -108,9 +116,8 @@ void loop()
   }
   client.loop();
   if(client.connected()){
+    //If there are information to publish, publish them to the MQTT broker
     if(modify){
-      // String datae = Serial2.readStringUntil('\n');
-      //Serial.println(datae);
       client.publish("/result/esp32_2/num_pack_recv", (char*) num_pack_recv.c_str());
       client.publish("/result/esp32_2/num_pack_tot", (char*) num_pack_tot.c_str());
       client.publish("/result/esp32_2/tempo", (char*) tempo.c_str());
@@ -118,13 +125,4 @@ void loop()
       modify = false;
     }
   }
-  // if (Serial2.available() > 0) {
-    // read the incoming string:
-   // String datae = Serial2.readStringUntil('\n');
-    //client.publish("/values/tognetti", (char*) datae.c_str());
-    
-    // prints the received data
-    //Serial.print("I received: ");
-    //Serial.println(datae);
-  //}
 }
